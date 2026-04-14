@@ -1,0 +1,14 @@
+fastapi[standard]
+celery[redis]
+passlib[bcrypt]
+sqlalchemy[asyncio]
+fastapi-mail
+pytest-asyncio
+asyncpg
+aiosqlite
+Authlib
+pyjwt
+alembic
+twilio
+stripe
+structlog
