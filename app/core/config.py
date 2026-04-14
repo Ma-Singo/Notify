@@ -13,9 +13,7 @@ print(BASE_DIR)
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=BASE_DIR / ".env",
-        case_sensitive=False,
-        extra="ignore"
+        env_file=BASE_DIR / ".env", case_sensitive=False, extra="ignore"
     )
 
     ##########################################
@@ -27,6 +25,12 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: list[str] = ["*"]
     API_V1_PREFIX: str = "/api/v1"
     FRONTEND_URL: AnyHttpUrl = "http://localhost:8000"
+
+    # ── Database ─────────────────────────────────────────────────────────────
+    SQLALCHEMY_DATABASE_URL: str = "sqlite+aiosqlite:///./db.sqlite3"
+    DATABASE_URL: str
+    DATABASE_POOL_SIZE: int = 10
+    DATABASE_MAX_OVERFLOW: int = 20
 
     @property
     def is_production(self) -> bool:
