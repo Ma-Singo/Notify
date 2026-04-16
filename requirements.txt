@@ -1,6 +1,6 @@
 fastapi[standard]
 celery[redis]
-passlib[bcrypt]
+pwdlib[argon2]
 sqlalchemy[asyncio]
 fastapi-mail
 pytest-asyncio
