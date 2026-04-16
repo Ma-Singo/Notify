@@ -20,17 +20,28 @@ class Settings(BaseSettings):
     # Application
     ##########################################
     APP_NAME: str = "NotifyFlow"
+    APP_VERSION: str
     APP_ENV: Literal["development", "staging", "production"] = "development"
     DEBUG: bool = False
+    SECRET_KEY: str
     ALLOWED_HOSTS: list[str] = ["*"]
     API_V1_PREFIX: str = "/api/v1"
     FRONTEND_URL: AnyHttpUrl = "http://localhost:8000"
 
-    # ── Database ─────────────────────────────────────────────────────────────
+    ##########################################
+    # DATABASE
+    ##########################################
     SQLALCHEMY_DATABASE_URL: str = "sqlite+aiosqlite:///./db.sqlite3"
     DATABASE_URL: str
     DATABASE_POOL_SIZE: int = 10
     DATABASE_MAX_OVERFLOW: int = 20
+
+    ##########################################
+    # ACCESS TOKEN
+    ##########################################
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    REFRESH_TOKEN_EXPIRE_DAYS: int
+    JWT_ALGORITHM: str
 
     @property
     def is_production(self) -> bool:
