@@ -31,7 +31,7 @@ class UserService:
         return result.scalar_one_or_none()
 
     async def get_user_by_username(self, username: str) -> User | None:
-        result = await self.db.execute(select(User).where(User.email == username))
+        result = await self.db.execute(select(User).where(User.username == username))
         return result.scalar_one_or_none()
 
     #  ------------ CRUD Operations ---------------
@@ -68,8 +68,8 @@ class UserService:
         await self.db.delete(user)
 
     #  ------------ Authentication ---------------
-    async def authenticate(self, email: str, password: str) -> TokenResponse:
-        user = await self.get_user_by_email(email)
+    async def authenticate(self, username: str, password: str) -> TokenResponse:
+        user = await self.get_user_by_username(username)
         if not user or not verify_password(password, user.hashed_password):
             raise ValueError("Invalid email or password")
         if not user.is_active:

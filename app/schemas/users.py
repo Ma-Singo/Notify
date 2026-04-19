@@ -7,7 +7,7 @@ from app.models.users import UserRole
 
 
 class UserBase(BaseModel):
-    username: str | None = None
+    username: str
     email: EmailStr
     phone: str | None = None
 
@@ -36,7 +36,7 @@ class UserRead(UserBase):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    username: str | None = None
     password: str
 
 
