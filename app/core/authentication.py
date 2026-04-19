@@ -21,8 +21,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 # ---------- JWT helpers --------------------
-
-
 def _create_token(data: dict[str, Any], expires_delta: timedelta) -> str:
     payload = data.copy()
     payload["exp"] = datetime.now(timezone.utc) + expires_delta
@@ -30,7 +28,7 @@ def _create_token(data: dict[str, Any], expires_delta: timedelta) -> str:
 
 
 def create_access_token(sub: str, extra: dict[str, Any] | None = None) -> str:
-    data: dict[str, Any] = {"sub": str(sub), "type": "access"}
+    data: dict[str, Any] = {"sub": sub, "type": "access"}
     if extra:
         data.update(extra)
     return _create_token(data, timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
