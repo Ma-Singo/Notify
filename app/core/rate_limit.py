@@ -1,18 +1,11 @@
 """
-Rate limiting for NotifyFlow.
-
-Strategy
---------
-* Uses ``slowapi`` (a Starlette/FastAPI wrapper around ``limits``), backed by Redis
-  so limits are shared across all API worker processes.
 * Two key dimensions:
     - **Unauthenticated / auth endpoints** → keyed by client IP
     - **Authenticated endpoints** → keyed by user-id (fairer than IP for shared
       networks; also prevents token-farming abuse)
 * Each route group (auth, default, notifications, webhooks) has its own limit
   string, all configurable through env vars.
-* When rate limiting is disabled (RATE_LIMIT_ENABLED=false) the limiter is a
-  no-op — useful for local dev or test environments.
+
 * Standard ``Retry-After``, ``X-RateLimit-*`` headers are injected on every
   response, and a ``429 Too Many Requests`` JSON body is returned on breach.
 """
@@ -87,25 +80,25 @@ async def rate_limit_exceeded_handler(
     )
 
 
-def limit_auth(func):  # type: ignore[no-untyped-def]
+def limit_auth(func):
     """Strict limit for auth endpoints (login, register, forgot-password)."""
     return limiter.limit(settings.RATE_LIMIT_AUTH, key_func=_get_key_by_ip)(func)
 
 
-def limit_default(func):  # type: ignore[no-untyped-def]
+def limit_default(func):
     """General limit for authenticated API routes, keyed by user-id."""
     return limiter.limit(settings.RATE_LIMIT_DEFAULT, key_func=_get_key_by_user_or_ip)(
         func
     )
 
 
-def limit_notifications(func):  # type: ignore[no-untyped-def]
+def limit_notifications(func):
     """Tighter limit for notification send endpoints."""
     return limiter.limit(
         settings.RATE_LIMIT_NOTIFICATIONS, key_func=_get_key_by_user_or_ip
     )(func)
 
 
-def limit_webhooks(func):  # type: ignore[no-untyped-def]
+def limit_webhooks(func):
     """Generous limit for Stripe webhook receiver."""
     return limiter.limit(settings.RATE_LIMIT_WEBHOOKS, key_func=_get_key_by_ip)(func)
