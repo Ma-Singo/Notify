@@ -12,3 +12,5 @@ alembic
 twilio
 stripe
 structlog
+slowapi
+limits
