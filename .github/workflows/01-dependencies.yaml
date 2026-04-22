@@ -1,4 +1,4 @@
-name: 01 Workflow Events
+name: 01 Setting up UV and python
 
 on:
   workflow_dispatch:
@@ -6,9 +6,6 @@ on:
 jobs:
   install-dependencies:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: caching/app
     steps:
       - uses: actions/checkout@v6
 
