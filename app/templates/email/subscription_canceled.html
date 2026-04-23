@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Subscription Canceled</h2>
+<p>Hi {{ name }},</p>
+<p>Your <strong>{{ plan_name }}</strong> subscription on <strong>{{ app_name }}</strong> has been canceled. You'll retain access until the end of your current billing period.</p>
+<p>We'd love to hear why you canceled so we can improve. Feel free to reply to this email.</p>
+<a class="btn" href="{{ frontend_url | default('#') }}/plans">View Plans</a>
+{% endblock %}

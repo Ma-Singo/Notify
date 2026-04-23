@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Subscription Activated 🚀</h2>
+<p>Hi {{ name }},</p>
+<p>You're now subscribed to the <strong>{{ plan_name }}</strong> plan on <strong>{{ app_name }}</strong>. Your subscription is active and ready to use.</p>
+<a class="btn" href="{{ frontend_url | default('#') }}/dashboard">Go to Dashboard</a>
+{% endblock %}

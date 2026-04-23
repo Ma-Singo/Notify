@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>⚠️ Action Required: Payment Failed</h2>
+<p>Hi {{ name }},</p>
+<p>We were unable to process your payment for the <strong>{{ plan_name }}</strong> plan on <strong>{{ app_name }}</strong>. Your subscription has been paused.</p>
+<p>Please update your payment method to restore access.</p>
+<a class="btn" href="{{ frontend_url | default('#') }}/billing">Update Payment Method</a>
+{% endblock %}

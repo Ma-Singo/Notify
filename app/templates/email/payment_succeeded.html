@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Payment Confirmed ✅</h2>
+<p>Hi {{ name }},</p>
+<p>Your payment for the <strong>{{ plan_name }}</strong> plan on <strong>{{ app_name }}</strong> was processed successfully. Thank you!</p>
+<a class="btn" href="{{ frontend_url | default('#') }}/dashboard">View Dashboard</a>
+{% endblock %}
