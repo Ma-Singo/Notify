@@ -36,7 +36,7 @@ class UserRead(UserBase):
 
 
 class LoginRequest(BaseModel):
-    username: str | None = None
+    username: str
     password: str
 
 
