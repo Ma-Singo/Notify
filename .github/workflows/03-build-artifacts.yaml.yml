@@ -1,0 +1,58 @@
+name: 03 - Build Artifacts
+on:
+  workflow_dispatch:
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      working-directory: 03-artifacts/
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setting up UV
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          version: '0.11.x'
+          cache-dependency-glob: "uv.lock"
+      - name: setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: ".python-version"
+
+      - name: Installing dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Type Checking
+        run: uv run mypy .
+
+      - name: Static checking
+        run: uv run ruff check .
+
+      - name: Run tests
+        run: uv run pytest
+
+      - name: Upload build files
+        uses: actions/upload-artifact@v6
+        with:
+          name: notify_app
+          path: ${{ env.working-directory }}/build
+
+
+
+  deploy:
+    runs-on: ubuntu-latest
+
+    needs: build
+
+    steps:
+      - name: Download build Artifacts
+        uses: actions/download-artifact@v6
+        with:
+          name: notify_app
+          path: build
+
+      - name: Show folder structure
+        run: ls -R
