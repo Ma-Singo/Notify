@@ -53,7 +53,7 @@ def _builder_limiter() -> Limiter:
         return Limiter(key_func=_get_key_by_ip, enabled=False)
     return Limiter(
         key_func=_get_key_by_ip,
-        #storage=settings.REDIS_URL,
+        storage_uri=settings.REDIS_URL,
         headers_enabled=True,
         strategy="fixed-window",
     )
@@ -82,23 +82,35 @@ async def rate_limit_exceeded_handler(
 
 def limit_auth(func):
     """Strict limit for auth endpoints (login, register, forgot-password)."""
-    return limiter.limit(settings.RATE_LIMIT_AUTH, key_func=_get_key_by_ip)(func)
+    return limiter.limit(
+        settings.RATE_LIMIT_AUTH,
+        error_message="Too many login attempts",
+        key_func=_get_key_by_ip,
+    )(func)
 
 
 def limit_default(func):
     """General limit for authenticated API routes, keyed by user-id."""
-    return limiter.limit(settings.RATE_LIMIT_DEFAULT, key_func=_get_key_by_user_or_ip)(
-        func
-    )
+    return limiter.limit(
+        settings.RATE_LIMIT_DEFAULT,
+        error_message="Too many login attempts",
+        key_func=_get_key_by_user_or_ip,
+    )(func)
 
 
 def limit_notifications(func):
     """Tighter limit for notification send endpoints."""
     return limiter.limit(
-        settings.RATE_LIMIT_NOTIFICATIONS, key_func=_get_key_by_user_or_ip
+        settings.RATE_LIMIT_NOTIFICATIONS,
+        error_message="Too many login attempts",
+        key_func=_get_key_by_user_or_ip,
     )(func)
 
 
 def limit_webhooks(func):
     """Generous limit for Stripe webhook receiver."""
-    return limiter.limit(settings.RATE_LIMIT_WEBHOOKS, key_func=_get_key_by_ip)(func)
+    return limiter.limit(
+        settings.RATE_LIMIT_WEBHOOKS,
+        error_message="Too many login attempts",
+        key_func=_get_key_by_ip,
+    )(func)
