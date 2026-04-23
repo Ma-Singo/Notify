@@ -1,3 +1,5 @@
+import structlog
+
 from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +12,9 @@ from app.models.notifications import (
 from app.models.users import User
 
 
+logger = structlog.get_logger(__name__)
+
+
 class NotificationService:
     """
     Centralized notification service
@@ -17,7 +22,7 @@ class NotificationService:
     and it will create a DB log entry then enqueue the appropriate celery task
     """
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
     async def fire_event(
@@ -36,19 +41,20 @@ class NotificationService:
         )
 
         logs.append(email_log)
-        self._dispatch_email(event=event, user=user, log=email_log, extra=extra)
+        self._dispatch_email(event, user, email_log, extra)
 
         if user.phone:
-            sms_log = await self._dispatch_sms(
+            sms_log = await self._create_log(
                 user=user,
                 channel=NotificationChannel.SMS,
                 event=event,
                 recipient=user.phone,
             )
             logs.append(sms_log)
-            self._dispatch_sms(event=event, user=user, log=sms_log, extra=extra)
+            self._dispatch_sms(event, user, sms_log, extra)
 
         await self.db.flush()
+        logger.info(event=event, user_id=str(user.id), count=str(len(logs)))
         return logs
 
     # ---- helper ------------
@@ -72,100 +78,56 @@ class NotificationService:
         self.db.add(log)
         return log
 
+        # ---------- Email Dispatch -----------
 
-# ---------- Email Dispatch -----------
-def _dispatch_email(
+    def _dispatch_email(
         self,
         event: NotificationEvent,
         user: User,
         log: Notification,
         extra: dict[str, Any],
-) -> None:
-    from app.tasks.email_tasks import (
-        send_account_created_email,
-        send_account_deleted_email,
-        send_password_reset_email,
-        send_subscription_email,
-    )
-
-    log_id = str(log.id)
-    name = user.username or user.email
-
-    if event == NotificationEvent.ACCOUNT_CREATED:
-        send_account_created_email.delay(user.email, name, log_id)
-
-    elif event == NotificationEvent.ACCOUNT_DELETED:
-        send_account_deleted_email.delay(user.email, name, log_id)
-
-    elif event == NotificationEvent.PASSWORD_RESET:
-        reset_url = extra.get("reset_url", str(extra.get("reset_url", "#")))
-        send_password_reset_email.delay(user.email, name, reset_url, log_id)
-
-    elif event in {
-        NotificationEvent.SUBSCRIPTION_CREATED,
-        NotificationEvent.SUBSCRIPTION_CANCELED,
-        NotificationEvent.SUBSCRIPTION_RENEWED,
-        NotificationEvent.PAYMENT_FAILED,
-        NotificationEvent.PAYMENT_SUCCEEDED,
-    }:
-
-        send_subscription_email.delay(
-            user.email, name, event.value, extra.get("plan_name", ""), log_id
+    ) -> None:
+        from app.tasks.email_tasks import (
+            send_account_created_email,
+            send_account_deleted_email,
+            send_password_reset_email,
         )
 
+        log_id = str(log.id)
+        name = user.username or user.email
 
-# ----- SMS Dispatch -----------
-def _dispatch_sms(
-    self,
-    event: NotificationEvent,
-    user: User,
-    log: Notification,
-    extra: dict[str, Any],
-) -> None:
-    from app.tasks.sms_tasks import (
-        send_account_created_sms,
-        send_account_deleted_sms,
-        send_password_reset_sms,
-        send_subscription_sms,
-    )
+        if event == NotificationEvent.ACCOUNT_CREATED:
+            send_account_created_email.delay(user.email, name, log_id)
 
-    phone = user.phone
-    log_id = str(log.id)
-    name = user.username or user.email
+        elif event == NotificationEvent.ACCOUNT_DELETED:
+            send_account_deleted_email.delay(user.email, name, log_id)
 
-    if event == NotificationEvent.ACCOUNT_CREATED:
-        send_account_created_sms.delay(phone, log_id, name)
-    elif event == NotificationEvent.ACCOUNT_DELETED:
-        send_account_deleted_sms.delay(phone, log_id)
-    elif event == NotificationEvent.PASSWORD_RESET:
-        otp = extra.get("otp", "")
-        send_password_reset_sms.delay(phone, log_id, otp)
-    elif event in {
-            NotificationEvent.SUBSCRIPTION_CREATED,
-            NotificationEvent.SUBSCRIPTION_CANCELED,
-            NotificationEvent.SUBSCRIPTION_RENEWED,
-            NotificationEvent.PAYMENT_FAILED,
-            NotificationEvent.PAYMENT_SUCCEEDED,
-        }:
-            send_subscription_sms.delay(phone, event.value, extra.get("plan_name", ""), log_id)
+        elif event == NotificationEvent.PASSWORD_RESET:
+            reset_url = extra.get("reset_url", str(extra.get("reset_url", "#")))
+            send_password_reset_email.delay(user.email, name, reset_url, log_id)
 
-
-    async def _create_log(
+    # ----- SMS Dispatch -----------
+    def _dispatch_sms(
         self,
-        user: User,
-        channel: NotificationChannel,
         event: NotificationEvent,
-        recipient: str,
-        subject: str | None = None,
-    ) -> Notification:
-        log = Notification(
-            user_id=user.id,
-            channel=channel,
-            event=event,
-            status=NotificationStatus.QUEUED,
-            recipient=recipient,
-            subject=subject,
+        user: User,
+        log: Notification,
+        extra: dict[str, Any],
+    ) -> None:
+        from app.tasks.sms_tasks import (
+            send_account_created_sms,
+            send_account_deleted_sms,
+            send_password_reset_sms,
         )
-        self.db.add(log)
-        return log
 
+        phone = user.phone
+        log_id = str(log.id)
+        name = user.username or user.email
+
+        if event == NotificationEvent.ACCOUNT_CREATED:
+            send_account_created_sms.delay(phone, log_id, name)
+        elif event == NotificationEvent.ACCOUNT_DELETED:
+            send_account_deleted_sms.delay(phone, log_id)
+        elif event == NotificationEvent.PASSWORD_RESET:
+            otp = extra.get("otp", "")
+            send_password_reset_sms.delay(phone, log_id, otp)

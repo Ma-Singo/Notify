@@ -1,5 +1,8 @@
 import uuid
+import structlog
 
+from app.schemas.notifications import NotificationEvent
+from app.services.notification_service import NotificationService
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 # from sqlalchemy.orm import selectinload
@@ -15,9 +18,13 @@ from app.models.users import User
 from app.schemas.users import UserCreate, UserUpdate, TokenResponse
 
 
+logger = structlog.getLogger(__name__)
+
+
 class UserService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
+        self.notifier = NotificationService(db)
 
     async def get_user_by_id(self, user_id: uuid.UUID) -> User:
         result = await self.db.execute(select(User).where(User.id == user_id))
@@ -48,8 +55,13 @@ class UserService:
         )
 
         self.db.add(user)
-        await self.db.commit()
-        await self.db.refresh(user)
+        await self.db.flush()
+
+        await self.notifier.fire_event(
+            user,
+            NotificationEvent.ACCOUNT_UPDATED,
+        )
+        logger.info("user created", user_id=str(user.id), email=user.email)
         return user
 
     async def update(self, user_id: uuid.UUID, payload: UserUpdate) -> User:
@@ -61,11 +73,23 @@ class UserService:
         if payload.password is not None:
             user.hashed_password = hash_password(payload.password)
         await self.db.flush()
+        await self.notifier.fire_event(
+            user,
+            NotificationEvent.ACCOUNT_UPDATED,
+        )
+        logger.info("user account updated", user_id=str(user.id), email=user.email)
         return user
 
     async def delete(self, user_id: uuid.UUID) -> None:
         user = await self.get_user_by_id(user_id)
+        # Fire ACCOUNT_DELETED hook BEFORE actual delete so user still exists
+        await self.notifier.fire_event(
+            user,
+            NotificationEvent.ACCOUNT_DELETED,
+        )
+        await self.db.flush()
         await self.db.delete(user)
+        logger.info("user deleted", user_id=str(user_id))
 
     #  ------------ Authentication ---------------
     async def authenticate(self, username: str, password: str) -> TokenResponse:
@@ -79,3 +103,21 @@ class UserService:
             access_token=create_access_token(str(user.id)),
             refresh_token=create_refresh_token(str(user.id)),
         )
+
+    async def request_password_reset(self, email: str) -> None:
+        user = await self.get_user_by_email(email)
+        if not user:
+            return  # silently ignore unknown emails
+        import random
+
+        otp = str(random.randint(100_000, 999_999))
+        # 🔔 Fire PASSWORD_RESET hook
+        await self.notifier.fire_event(
+            event=NotificationEvent.PASSWORD_RESET,
+            user=user,
+            extra={
+                "otp": otp,
+                "reset_url": f"http://127.0.0.1:8000/api/v1/auth/reset?token={otp}",
+            },
+        )
+        logger.info("password reset requested", user_id=str(user.id))
