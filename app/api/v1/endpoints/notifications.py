@@ -9,7 +9,7 @@ from app.models.notifications import (
     NotificationEvent,
     NotificationStatus,
 )
-from app.core.rate_limit import limit_default, limit_notifications
+from app.core.rate_limit import limit_notifications
 from app.schemas.notifications import (
     NotificationPage,
     NotificationRead,
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
 @router.get("/", response_model=NotificationPage)
-@limit_default
+@limit_notifications
 async def list_my_notifications(
     request: Request,
     current_user: CurrentUser,
