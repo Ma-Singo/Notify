@@ -32,9 +32,9 @@ class User(UUIDModel):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-
     notifications: Mapped[list[Notification]] = relationship(
-        "Notification", back_populates="user", lazy="dynamic" )
+        "Notification", back_populates="user", lazy="dynamic"
+    )
 
     def __repr__(self) -> str:
         return f"<User {self.username}>"
