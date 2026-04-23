@@ -51,6 +51,13 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str
 
     ##########################################
+    # TWILIO (SMS)
+    ##########################################
+    TWILIO_ACCOUNT_SID: str
+    TWILIO_AUTH_TOKEN: str
+    TWILIO_FROM_NUMBER: str
+
+    ##########################################
     # EMAIL CONFIGURATION
     ##########################################
     MAIL_USERNAME: str
