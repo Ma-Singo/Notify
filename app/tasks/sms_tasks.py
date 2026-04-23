@@ -1,4 +1,3 @@
-
 import structlog
 from celery import Task
 from twilio.rest import Client
@@ -15,6 +14,7 @@ def _get_twilio_client() -> Client:
 
 # ── Tasks ─────────────────────────────────────────────────────────────────────
 
+
 @celery_app.task(
     bind=True,
     name="app.tasks.sms_tasks.send_account_created_sms",
@@ -22,7 +22,9 @@ def _get_twilio_client() -> Client:
     default_retry_delay=30,
     queue="sms",
 )
-def send_account_created_sms(self: Task, phone: str, user_name: str, log_id: str) -> str:
+def send_account_created_sms(
+    self: Task, phone: str, user_name: str, log_id: str
+) -> str:
     try:
         client = _get_twilio_client()
         body = f"Welcome to {settings.APP_NAME}, {user_name}! Your account is ready."
@@ -122,4 +124,5 @@ def send_custom_sms(self: Task, to: str, body: str, log_id: str) -> str:
 
 def _update_log(log_id: str, status: str, error: str | None = None) -> None:
     from app.tasks.email_tasks import update_notification_log
+
     update_notification_log.delay(log_id, status, error)
