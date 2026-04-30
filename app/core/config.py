@@ -8,8 +8,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-print(BASE_DIR)
-
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -56,6 +54,13 @@ class Settings(BaseSettings):
     TWILIO_ACCOUNT_SID: str
     TWILIO_AUTH_TOKEN: str
     TWILIO_FROM_NUMBER: str
+
+    ##########################################
+    # PAYMENTS (STRIPE)
+    ##########################################
+    STRIPE_API_KEY: str
+    STRIPE_PUBLISHABLE_KEY: str
+    STRIPE_WEBHOOK_SECRET: str
 
     ##########################################
     # EMAIL CONFIGURATION
