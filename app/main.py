@@ -6,7 +6,12 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
 from app.core.rate_limit import rate_limit_exceeded_handler, limiter
-from app.core.exceptions import ConflictError, NotFoundError, PermissionError
+from app.core.exceptions import (
+    ConflictError,
+    NotFoundError,
+    PermissionError,
+    SubscriptionError,
+)
 from app.core.lifespan import lifespan
 from app.api.v1.router import api_router
 
@@ -57,6 +62,13 @@ async def permission_handler(_: Request, exc: PermissionError) -> JSONResponse:
     )
 
 
+@app.exception_handler(SubscriptionError)
+async def subscription_handler(_: Request, exc: SubscriptionError) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_402_PAYMENT_REQUIRED, content={"detail": str(exc)}
+    )
+
+# --------------- Health Checks -----------------------------------------------
 @app.get("/health", tags=["health"])
 async def health() -> dict[str, str]:
     return {"status": "ok", "app": settings.APP_NAME, "env": settings.APP_ENV}
