@@ -35,6 +35,7 @@ class NotificationEvent(str, enum.Enum):
 
 class NotificationStatus(str, enum.Enum):
     QUEUED = "queued"
+    SENT = "sent"
     FAILED = "failed"
     SUCCEEDED = "succeeded"
     RETRYING = "retrying"
