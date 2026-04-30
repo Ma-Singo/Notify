@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import UUIDModel
 from app.models.notifications import Notification
+from app.models.subscriptions import Subscription
 
 
 class UserRole(str, enum.Enum):
@@ -34,6 +35,11 @@ class User(UUIDModel):
 
     notifications: Mapped[list[Notification]] = relationship(
         "Notification", back_populates="user", lazy="dynamic"
+    )
+    subscription: Mapped[Subscription] = relationship(
+        "Subscription",
+        back_populates="user",
+        uselist=False,
     )
 
     def __repr__(self) -> str:
