@@ -5,7 +5,7 @@ from app.schemas.notifications import NotificationEvent
 from app.services.notification_service import NotificationService
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-# from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import ConflictError, NotFoundError
 from app.core.authentication import (
@@ -14,7 +14,7 @@ from app.core.authentication import (
     hash_password,
     verify_password,
 )
-from app.models.users import User
+from app.models.users import User, UserRole
 from app.schemas.users import UserCreate, UserUpdate, TokenResponse
 
 
@@ -27,7 +27,11 @@ class UserService:
         self.notifier = NotificationService(db)
 
     async def get_user_by_id(self, user_id: uuid.UUID) -> User:
-        result = await self.db.execute(select(User).where(User.id == user_id))
+        result = await self.db.execute(
+            select(User)
+            .where(User.id == user_id)
+            .options(selectinload(User.subscription))
+        )
         user = result.scalar_one_or_none()
         if not user:
             raise NotFoundError("User", str(user_id))
@@ -44,14 +48,16 @@ class UserService:
     #  ------------ CRUD Operations ---------------
 
     async def create(self, payload: UserCreate) -> User:
-        exists = await self.get_user_by_email(payload.email)
-        if exists:
-            raise ConflictError(f"Email '{payload.email}' already exists")
+
+        email_exists = await self.get_user_by_email(payload.email)
+        # username_exists = await self.get_user_by_username(payload.username)
+        if email_exists:
+            raise ConflictError("User already exists")
         user = User(
             email=payload.email,
             hashed_password=hash_password(payload.password),
             username=payload.username,
-            phone=payload.phone,
+            phone=payload.phone if payload.phone else None,
         )
 
         self.db.add(user)
@@ -59,9 +65,24 @@ class UserService:
 
         await self.notifier.fire_event(
             user,
-            NotificationEvent.ACCOUNT_UPDATED,
+            NotificationEvent.ACCOUNT_CREATED,
         )
         logger.info("user created", user_id=str(user.id), email=user.email)
+        return user
+
+    async def create_superuser(self, username: str, email: str, password: str) -> User:
+        email_exists = await self.get_user_by_email(email)
+        username_exists = await self.get_user_by_username(username)
+        if email_exists or username_exists:
+            raise ConflictError("User already exists")
+        user = User(
+            username=username,
+            email=email,
+            hashed_password=hash_password(password),
+        )
+        user.role = UserRole.ADMIN
+        self.db.add(user)
+        await self.db.flush()
         return user
 
     async def update(self, user_id: uuid.UUID, payload: UserUpdate) -> User:
@@ -82,7 +103,7 @@ class UserService:
 
     async def delete(self, user_id: uuid.UUID) -> None:
         user = await self.get_user_by_id(user_id)
-        # Fire ACCOUNT_DELETED hook BEFORE actual delete so user still exists
+
         await self.notifier.fire_event(
             user,
             NotificationEvent.ACCOUNT_DELETED,
@@ -111,7 +132,7 @@ class UserService:
         import random
 
         otp = str(random.randint(100_000, 999_999))
-        # 🔔 Fire PASSWORD_RESET hook
+
         await self.notifier.fire_event(
             event=NotificationEvent.PASSWORD_RESET,
             user=user,
