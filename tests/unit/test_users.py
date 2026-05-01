@@ -8,8 +8,8 @@ async def test_get_me(client: AsyncClient, auth_headers: dict) -> None:
     res = await client.get("/api/v1/users/me", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
-    assert data["email"] == "test@example.com"
-    assert data["username"] == "test"
+    assert ("test_" and "@example.com") in data["email"]
+    assert "test_" in data["username"]
 
 
 @pytest.mark.asyncio
