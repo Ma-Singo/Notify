@@ -52,10 +52,7 @@ async def get_user(
     _admin: AdminUser,
     db: DBSession,
 ) -> UserRead:
-    """Admin: fetch any user by ID.
-
-    Rate limit: 60 requests/minute per admin user-id.
-    """
+    """Admin: fetch any user by ID."""
     try:
         user = await UserService(db).get_user_by_id(user_id)
     except NotFoundError as exc:
