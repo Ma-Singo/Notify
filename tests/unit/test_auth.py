@@ -50,9 +50,9 @@ async def test_login_success(client: AsyncClient, test_user) -> None:
     res = await client.post(
         "/api/v1/auth/login",
         json={
-            "email": "test@example.com",
+            "email": test_user.email,
             "password": "password123",
-            "username": "test",
+            "username": test_user.username,
         },
     )
     assert res.status_code == 200
@@ -80,7 +80,7 @@ async def test_login_wrong_password(client: AsyncClient) -> None:
 async def test_refresh_token(client: AsyncClient, test_user) -> None:
     res = await client.post(
         "/api/v1/auth/login",
-        json={"password": "password123", "username": "test"},
+        json={"password": "password123", "username": test_user.username},
     )
     refresh_token = res.json()["refresh_token"]
     res = await client.post(
