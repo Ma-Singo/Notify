@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 
 
-class NotifyError(HTTPException):
+class NotifyError(Exception):
     """Base class for exceptions in this module."""
 
 
