@@ -1,6 +1,6 @@
 import math
 
-from fastapi import APIRouter, Query, Request, status
+from fastapi import APIRouter, Query, Request, status, Response
 
 from app.api.deps import AdminUser, CurrentUser, DBSession
 from app.models.notifications import (
@@ -17,7 +17,6 @@ from app.schemas.notifications import (
     SendEmailRequest,
 )
 
-
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
@@ -25,15 +24,13 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 @limit_notifications
 async def list_my_notifications(
     request: Request,
+    response: Response,
     current_user: CurrentUser,
     db: DBSession,
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> NotificationPage:
-    """Paginated notification history for the current user.
-
-    Rate limit: 60 requests/minute per user-id.
-    """
+    """Paginated notification history for the current user."""
     from sqlalchemy import func, select
 
     offset = (page - 1) * size
@@ -65,14 +62,12 @@ async def list_my_notifications(
 @limit_notifications
 async def send_custom_email(
     request: Request,
+    response: Response,
     payload: SendEmailRequest,
     _admin: AdminUser,
     db: DBSession,
 ) -> dict[str, str]:
-    """Admin: manually enqueue a custom email.
-
-    Rate limit: 30 requests/minute per admin user-id — prevents runaway sends.
-    """
+    """Admin: manually enqueue a custom email."""
     from app.tasks.email_tasks import send_custom_email as _task
 
     log = Notification(
@@ -82,7 +77,7 @@ async def send_custom_email(
         status=NotificationStatus.QUEUED,
         recipient=payload.to,
         subject=payload.subject,
-        body_preview=payload.body[:500],
+        body=payload.body[:500],
     )
     db.add(log)
     await db.flush()
@@ -96,14 +91,12 @@ async def send_custom_email(
 @limit_notifications
 async def send_custom_sms(
     request: Request,
+    response: Response,
     payload: SendSMSRequest,
     _admin: AdminUser,
     db: DBSession,
 ) -> dict[str, str]:
-    """Admin: manually enqueue a custom SMS.
-
-    Rate limit: 30 requests/minute per admin user-id.
-    """
+    """Admin: manually enqueue a custom SMS."""
     from app.tasks.sms_tasks import send_custom_sms as _task
 
     log = Notification(
@@ -112,7 +105,7 @@ async def send_custom_sms(
         event=NotificationEvent.CUSTOM,
         status=NotificationStatus.QUEUED,
         recipient=payload.to,
-        body_preview=payload.body[:500],
+        body=payload.body[:500],
     )
     db.add(log)
     await db.flush()
