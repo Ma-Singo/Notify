@@ -94,8 +94,5 @@ async def refresh_token(
 async def forgot_password(
     request: Request, response: Response, email: str, db: DBSession
 ) -> None:
-    """Trigger password-reset notification (email + SMS OTP).
-
-    Rate limit: 10 requests/minute per IP — prevents SMS/email flooding.
-    """
+    """Trigger password-reset notification (email + SMS OTP)."""
     await UserService(db).request_password_reset(email)
