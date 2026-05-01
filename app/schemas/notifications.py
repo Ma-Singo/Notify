@@ -20,7 +20,7 @@ class NotificationRead(BaseModel):
     subject: str | None
     body: str | None
     celery_task_id: str | None
-    error_body: str | None
+    error_message: str | None
     retry_count: int
     created_at: datetime
 
