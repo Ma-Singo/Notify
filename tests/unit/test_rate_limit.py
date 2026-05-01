@@ -27,7 +27,7 @@ async def test_rate_limit_headers_present(client: AsyncClient, test_user) -> Non
     """Successful responses include X-RateLimit-* headers when limiting is active."""
     resp = await client.post(
         "/api/v1/auth/login",
-        json={"username": "test", "password": "password123"},
+        json={"username": test_user.username, "password": "password123"},
     )
     assert resp.status_code == 200
 
