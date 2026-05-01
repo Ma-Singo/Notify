@@ -22,12 +22,18 @@ class PermissionError(NotifyError):
         super().__init__(message)
 
 
+class SubscriptionError(NotifyError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
 # HTTP exception factories
 
 
 def http_404(resource: str, identifier: str | int) -> HTTPException:
     return HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND, detail=f"Resource '{resource}' not found"
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"{resource} '{identifier}' not found",
     )
 
 
