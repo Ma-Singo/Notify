@@ -9,7 +9,6 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.db.session import Base, get_db
-from app.core.rate_limit import limiter
 from app.core.authentication import hash_password, create_access_token
 from app.models.users import User
 from app.main import app
@@ -29,15 +28,6 @@ def event_loop():
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
-
-
-@pytest_asyncio.fixture(autouse=True)
-async def disable_rate_limit() -> None:
-    original_enabled = getattr(limiter, "_enabled", True)
-
-    limiter._enabled = False
-    yield
-    limiter._enabled = original_enabled
 
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
@@ -73,11 +63,12 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
 
 @pytest_asyncio.fixture
 async def test_user(db_session: AsyncSession) -> User:
+    import uuid
 
     user = User(
-        email="test@example.com",
+        email=f"test_{uuid.uuid4()}@example.com",
         hashed_password=hash_password("password123"),
-        username="test",
+        username=f"test_{uuid.uuid4()}",
         phone="+15550001234",
         is_verified=True,
     )
