@@ -41,7 +41,6 @@ class NotificationService:
         )
 
         logs.append(email_log)
-        self._dispatch_email(event, user, email_log, extra)
 
         if user.phone:
             sms_log = await self._create_log(
@@ -51,9 +50,14 @@ class NotificationService:
                 recipient=user.phone,
             )
             logs.append(sms_log)
-            self._dispatch_sms(event, user, sms_log, extra)
 
         await self.db.flush()
+
+        self._dispatch_email(event, user, email_log, extra)
+
+        if user.phone:
+            self._dispatch_sms(event, user, sms_log, extra)
+
         logger.info(event=event, user_id=str(user.id), count=str(len(logs)))
         return logs
 

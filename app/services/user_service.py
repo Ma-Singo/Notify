@@ -1,5 +1,4 @@
 import uuid
-import structlog
 
 from app.schemas.notifications import NotificationEvent
 from app.services.notification_service import NotificationService
@@ -16,9 +15,7 @@ from app.core.authentication import (
 )
 from app.models.users import User, UserRole
 from app.schemas.users import UserCreate, UserUpdate, TokenResponse
-
-
-logger = structlog.getLogger(__name__)
+from app.core.logging import logger
 
 
 class UserService:
@@ -48,7 +45,6 @@ class UserService:
     #  ------------ CRUD Operations ---------------
 
     async def create(self, payload: UserCreate) -> User:
-
         email_exists = await self.get_user_by_email(payload.email)
         # username_exists = await self.get_user_by_username(payload.username)
         if email_exists:
@@ -109,7 +105,7 @@ class UserService:
             NotificationEvent.ACCOUNT_DELETED,
         )
         await self.db.flush()
-        await self.db.delete(user)
+        # await self.db.delete(user)
         logger.info("user deleted", user_id=str(user_id))
 
     #  ------------ Authentication ---------------
