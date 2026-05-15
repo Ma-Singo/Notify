@@ -10,19 +10,22 @@ class Base(DeclarativeBase):
     """shared declarative base class for all ORM models"""
 
 
+"""
 if settings.APP_ENV == "development":
     engine = create_async_engine(
-        settings.SQLALCHEMY_DATABASE_URL,
+        settings.DATABASE_URL,
         connect_args={"check_same_thread": False},
     )
 else:
-    engine = create_async_engine(
-        settings.SQLALCHEMY_DATABASE_URL,
-        future=True,
-        echo=settings.DEBUG,
-        pool_size=settings.SQLALCHEMY_DATABASE_POOL_SIZE,
-        max_overflow=settings.SQLALCHEMY_MAX_OVERFLOW,
-    )
+"""
+
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    future=True,
+    echo=settings.DEBUG,
+    pool_size=settings.DATABASE_POOL_SIZE,
+    max_overflow=settings.DATABASE_MAX_OVERFLOW,
+)
 
 AsyncSessionLocal = async_sessionmaker(
     engine, expire_on_commit=False, class_=AsyncSession
