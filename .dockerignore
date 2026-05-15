@@ -1,14 +1,55 @@
-.git
-.github
-.gitignore
-*.env
-.dockerignore
+*.sql*
+*.sh
+
+
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__
-*.pyc
+*.py[cod]
 *.pyo
-.pytest_cache
-tests/
-*.md
+*.pyd
+.Python
+
+# ── Virtual environments — NEVER copy these into the image ────────────────────
+# Without this, a local .venv gets COPY'd in and shadows the one uv builds,
+# which causes "uv sync --frozen" exit code 2 because the env was created on
+# a different Python/platform than the container's python:3.11-slim image.
 .venv
+venv
+env
+
+# ── uv cache ──────────────────────────────────────────────────────────────────
+.cache/uv
+
+# ── Test / coverage ───────────────────────────────────────────────────────────
+.pytest_cache
+.coverage
+htmlcov
 .mypy_cache
 .ruff_cache
+
+# ── Editor / OS ───────────────────────────────────────────────────────────────
+.idea
+.vscode
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Git ───────────────────────────────────────────────────────────────────────
+.git
+.gitignore
+.github
+
+# ── Docker ───────────────────────────────────────────────────────────────────
+.dockerignore
+docker-compose*.yml
+
+# ── Secrets / local config ────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Docs / misc ───────────────────────────────────────────────────────────────
+README.md
+docs
+*.md

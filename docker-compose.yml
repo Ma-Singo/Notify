@@ -1,0 +1,128 @@
+x-app-base: &app-base
+  build:
+    context: .
+  env_file:
+    - .env
+  environment:
+    - APP_ENV=development
+    - CELERY_BROKER_URL=$CELERY_BROKER_URL
+    - CELERY_RESULT_BACKEND=$CELERY_RESULT_BACKEND
+    - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
+  networks:
+    - notify
+
+
+x-app-depends: &app-depends
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+
+
+services:
+  migrate:
+    <<: *app-base
+    container_name: notify_migrate
+    command: sh -c "alembic upgrade head && python manage.py seed"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    <<: [*app-base, *app-depends]
+    container_name: notify_api
+    command: gunicorn app.main:app --preload -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+
+  worker:
+    <<: [*app-base, *app-depends]
+    container_name: notify_worker
+    command: celery -A app.worker worker --loglevel=info --concurrency=4 -Q default,emails,sms -E
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD", "celery", "-A", "app.worker", "inspect", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+
+  beat:
+    <<: [*app-base, *app-depends]
+    container_name: notify_beat
+    command: celery -A app.worker beat --loglevel=info --scheduler redbeat.RedBeatScheduler
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  flower:
+    <<: [*app-base, *app-depends]
+    container_name: notify_flower
+    command: celery -A app.worker flower --port=5555
+    ports:
+      - "5555:5555"
+
+  db:
+    image: postgres:16-alpine
+    container_name: notify_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-notify}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-notify}
+      POSTGRES_DB: ${POSTGRES_DB:-notify}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-notify}"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    networks:
+      notify:
+
+  redis:
+    image: redis:7-alpine
+    container_name: notify_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - notify
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - notify
+
+volumes:
+  redis_data:
+  postgres_data:
+
+networks:
+  notify:
+    driver: bridge
