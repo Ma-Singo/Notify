@@ -33,8 +33,6 @@ class UserRead(UserBase):
 
 
 # ----------- AUTH -----------------
-
-
 class LoginRequest(BaseModel):
     username: str
     password: str

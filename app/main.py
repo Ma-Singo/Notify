@@ -12,7 +12,6 @@ from app.core.exceptions import (
     PermissionError,
     SubscriptionError,
 )
-from app.core.lifespan import lifespan
 from app.api.v1.router import api_router
 
 app = FastAPI(
@@ -22,8 +21,8 @@ app = FastAPI(
     docs_url="/docs" if not settings.is_production else None,
     redoc_url="/redoc" if not settings.is_production else None,
     openapi_url="/openapi.json" if not settings.is_production else None,
-    lifespan=lifespan,
 )
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)  # type: ignore[arg-type]
 app.add_middleware(SlowAPIMiddleware)
