@@ -1,5 +1,4 @@
 import enum
-# from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -28,7 +27,7 @@ class User(UUIDModel):
     )
     phone: Mapped[str | None] = mapped_column(String(30))
     role: Mapped[str] = mapped_column(
-        Enum(UserRole), nullable=False, default=UserRole.USER
+        Enum(UserRole, create_type=False), nullable=False, default=UserRole.USER
     )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -36,7 +35,7 @@ class User(UUIDModel):
     notifications: Mapped[list[Notification]] = relationship(
         "Notification", back_populates="user", lazy="dynamic"
     )
-    subscription: Mapped[Subscription] = relationship(
+    subscription: Mapped[Subscription | None] = relationship(
         "Subscription",
         back_populates="user",
         uselist=False,

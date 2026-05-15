@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import enum
 import uuid
 from datetime import datetime
@@ -50,7 +52,7 @@ class Plan(UUIDModel):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     subscriptions: Mapped[list[Subscription]] = relationship(
-        "Subscription", back_populates="plan"
+        "app.models.subscriptions.Subscription", back_populates="plan"
     )
 
     def __repr__(self):
@@ -74,7 +76,9 @@ class Subscription(UUIDModel):
         nullable=False,
     )
     status: Mapped[SubscriptionStatus] = mapped_column(
-        Enum(SubscriptionStatus), default=SubscriptionStatus.TRIALING, nullable=False
+        Enum(SubscriptionStatus, create_type=False),
+        default=SubscriptionStatus.TRIALING,
+        nullable=False,
     )
     stripe_subscription_id: Mapped[str | None] = mapped_column(String(100), unique=True)
     stripe_customer_id: Mapped[str | None] = mapped_column(String(100))
@@ -90,7 +94,7 @@ class Subscription(UUIDModel):
     sms_sent: Mapped[int] = mapped_column(Integer, default=0)
 
     user: Mapped[User] = relationship("User", back_populates="subscription")
-    plan: Mapped[Plan] = relationship("Plan", back_populates="subscriptions")
+    plan: Mapped[Plan] = relationship(Plan, back_populates="subscriptions")
 
     @property
     def is_active(self) -> bool:

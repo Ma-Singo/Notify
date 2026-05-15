@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import enum
 import uuid
 from typing import TYPE_CHECKING
@@ -51,13 +53,15 @@ class Notification(UUIDModel):
         index=True,
     )
     channel: Mapped[NotificationChannel] = mapped_column(
-        Enum(NotificationChannel), nullable=False
+        Enum(NotificationChannel, create_type=False), nullable=False
     )
     event: Mapped[NotificationEvent] = mapped_column(
-        Enum(NotificationEvent), nullable=False
+        Enum(NotificationEvent, create_type=False), nullable=False
     )
     status: Mapped[NotificationStatus] = mapped_column(
-        Enum(NotificationStatus), nullable=False, default=NotificationStatus.QUEUED
+        Enum(NotificationStatus, create_type=False),
+        nullable=False,
+        default=NotificationStatus.QUEUED,
     )
     recipient: Mapped[str] = mapped_column(String(255))
     subject: Mapped[str | None] = mapped_column(String(255))
