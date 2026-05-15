@@ -6,11 +6,12 @@ fastapi-mail
 pytest-asyncio
 asyncpg
 aiosqlite
-Authlib
 pyjwt
 alembic
 twilio
 stripe
 structlog
 slowapi
-limits
+flower
+gunicorn
+psycopg2-binary
