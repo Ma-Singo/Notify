@@ -4,10 +4,10 @@ Usage:
     $ python manage.py seed
 """
 
-from app.db.session import AsyncSessionLocal, Base, engine
+from app.db.session import AsyncSessionLocal
 from app.models.subscriptions import Plan, PlanInterval
 
-from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 
 PLANS = [
@@ -51,20 +51,18 @@ PLANS = [
 
 
 async def seed_db() -> None:
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
     async with AsyncSessionLocal() as session:
         for plan_data in PLANS:
-            existing = await session.execute(
-                select(Plan).where(Plan.slug == plan_data["slug"])
+            stmt = (
+                pg_insert(Plan)
+                .values(**plan_data)
+                .on_conflict_do_nothing(index_elements=["slug"])
             )
-            if existing.scalar_one_or_none():
+            result = await session.execute(stmt)
+            if result.rowcount:
+                print(f"  [+] Created plan '{plan_data['slug']}'")
+            else:
                 print(f"  [skip] Plan '{plan_data['slug']}' already exists.")
-                continue
-            plan = Plan(**plan_data)
-            session.add(plan)
-            print(f"  [+] Created plan '{plan_data['slug']}'")
 
         await session.commit()
         print("\nSeeding complete.")
